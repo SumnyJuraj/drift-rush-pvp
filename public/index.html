@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Drift Rush PvP</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; }
+        
+        canvas { display: block; background: #333; margin: auto; }
+    </style>
+    <!-- 1. Najprv načítame Socket.io klienta -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- 2. Potom našu hru, defer zaistí, že canvas už existuje -->
+     <script type="module" src="game.js"></script>
+    <script src="game.js" defer></script>
+</head>
+<body>
+    <div id="ui-overlay" style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+    <button id="mobileToggle" style="background: red; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px; font-weight: bold;">
+        MOBILE MODE: OFF
+    </button>
+</div>
+<div id="joystick-base" style="position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: none; pointer-events: none; z-index: 5; border: 2px solid rgba(255,255,255,0.4);">
+    <div id="joystick-knob" style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%; top: 20px; left: 20px;"></div>
+</div>
+    <canvas id="gameCanvas"></canvas>
+</body>
+</html>
