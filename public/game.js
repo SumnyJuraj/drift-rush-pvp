@@ -23,7 +23,7 @@ let skidMarks = [];
 let otherPlayers = {};
 
 let player = {
-    x: 380, y: 100, // Štartujeme kúsok PRED cieľovou čiarou (x=400)
+    x: 381, y: 100, // Štartujeme kúsok PRED cieľovou čiarou (x=400)
     angle: 0, vx: 0, vy: 0, size: 20
 };
 
