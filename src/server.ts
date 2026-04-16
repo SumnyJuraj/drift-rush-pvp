@@ -8,7 +8,14 @@ const app = express();
 const httpServer = createServer(app); // Vytvorenie HTTP servera z Express aplikácie
 const io = new Server(httpServer);    // Inicializácia Socket.io na tomto serveri
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// Uprav aj listen, aby počúval na všetkých rozhraniach (0.0.0.0)
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`Server beží na porte ${PORT}`);
+});
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
