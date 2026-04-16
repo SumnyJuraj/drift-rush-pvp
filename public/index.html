@@ -1,42 +1,28 @@
+<!DOCTYPE html>
+<html lang="sk">
 <head>
     <meta charset="UTF-8">
-    <!-- Zabezpečí, že mobil nebude stránku zoomovať a písmo ostane čitateľné -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drift Rush PvP</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #111; 
-            font-family: sans-serif;
-            /* Zákaz skrolovania a gest na celom body pre mobilné prehliadače */
-            touch-action: none; 
-        }
-        canvas { 
-            display: block; 
-            /* Responzívne škálovanie pri zachovaní pomeru strán */
-            max-width: 100vw; 
-            max-height: 100vh;
-            width: 100%;
-            height: auto;
-            margin: auto;
-            background: #222;
-        }
-        /* Štýly pre dotykové zóny - neviditeľné, ale funkčné */
-        .touch-zone {
-            position: absolute;
-            bottom: 0;
-            top: 0;
-            width: 50%;
-            z-index: 20;
-            display: none; /* Zapne sa len v Mobile Mode */
-        }
-        #left-zone { left: 0; }
-        #right-zone { right: 0; }
+        body { margin: 0; background: #111; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; object-fit: contain; background: #222; }
     </style>
 </head>
 <body>
-    <div id="left-zone" class="touch-zone"></div>
-    <div id="right-zone" class="touch-zone"></div>
-    <!-- Zvyšok UI pre mobileToggle ostáva -->
+    <button id="mobileToggle" style="position:fixed; z-index:100; top:10px; right:10px;">Mobile Mode: OFF</button>
+    <div id="left-zone" style="position:fixed; left:0; top:0; width:50%; height:100%; z-index:50; display:none;"></div>
+    <div id="right-zone" style="position:fixed; right:0; top:0; width:50%; height:100%; z-index:50; display:none;"></div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 1. Socket.io musí byť PRVÝ -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- 2. Potom spustíme našu hru ako modul -->
+    <script type="module">
+        console.log("HTML: Spúšťam modul game.js");
+        import './game.js';
+    </script>
 </body>
+</html>

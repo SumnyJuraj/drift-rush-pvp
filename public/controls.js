@@ -8,16 +8,16 @@ export const Inputs = {
         const leftZone = document.getElementById('left-zone');
         const rightZone = document.getElementById('right-zone');
 
-        btn.onclick = () => {
-            this.useMobile = !this.useMobile;
-            btn.style.background = this.useMobile ? 'green' : 'red';
-            btn.textContent = `MOBILE MODE: ${this.useMobile ? 'ON' : 'OFF'}`;
-            // Zobrazenie zón pre dotyk
-            leftZone.style.display = this.useMobile ? 'block' : 'none';
-            rightZone.style.display = this.useMobile ? 'block' : 'none';
-        };
+        if (btn) {
+            btn.onclick = () => {
+                this.useMobile = !this.useMobile;
+                btn.style.background = this.useMobile ? 'green' : 'red';
+                btn.textContent = `MOBILE MODE: ${this.useMobile ? 'ON' : 'OFF'}`;
+                leftZone.style.display = this.useMobile ? 'block' : 'none';
+                rightZone.style.display = this.useMobile ? 'block' : 'none';
+            };
+        }
 
-        // Klávesnica ostáva pre PC testovanie
         window.onkeydown = (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a') this.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd') this.right = true;
@@ -27,23 +27,14 @@ export const Inputs = {
             if (e.key === 'ArrowRight' || e.key === 'd') this.right = false;
         };
 
-        // DOTYKOVÁ LOGIKA (Zóny)
-        const handleTouch = (zone, direction, state) => {
-            zone.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                this[direction] = state;
-            });
-            zone.addEventListener('pointerup', (e) => {
-                e.preventDefault();
-                this[direction] = !state;
-            });
-            zone.addEventListener('pointerleave', (e) => {
-                e.preventDefault();
-                this[direction] = !state;
-            });
+        const handleTouch = (zone, direction) => {
+            if (!zone) return;
+            zone.onpointerdown = (e) => { e.preventDefault(); this[direction] = true; };
+            zone.onpointerup = (e) => { e.preventDefault(); this[direction] = false; };
+            zone.onpointerleave = (e) => { e.preventDefault(); this[direction] = false; };
         };
 
-        handleTouch(leftZone, 'left', true);
-        handleTouch(rightZone, 'right', true);
+        handleTouch(leftZone, 'left');
+        handleTouch(rightZone, 'right');
     }
 };
