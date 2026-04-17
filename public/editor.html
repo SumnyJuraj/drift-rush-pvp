@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <title>Drift Rush - Map Editor</title>
+    <style>
+        body { margin: 0; background: #222; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        canvas { background: #111; border: 2px solid #444; cursor: crosshair; margin-top: 10px; }
+        .controls { padding: 10px; background: #333; width: 100%; display: flex; gap: 10px; justify-content: center; }
+        button { padding: 8px 15px; cursor: pointer; background: #555; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #777; }
+        .info { font-size: 12px; color: #aaa; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="undoBtn">Krok späť (Ctrl+Z)</button>
+        <button id="clearBtn">Vymazať všetko</button>
+        <button id="saveBtn" style="background: green;">Uložiť Mapu (JSON)</button>
+        <input type="number" id="widthInput" value="130" title="Šírka trate" style="width: 50px;">
+        <span class="info">Klikaním kresli stredovú líniu trate.</span>
+    </div>
+    <canvas id="editorCanvas" width="800" height="600"></canvas>
+
+    <script type="module">
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        const widthInput = document.getElementById('widthInput');
+
+        // Body trate: [{x, y}, {x, y}, ...]
+        let points = [];
+
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            render();
+        };
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (points.length < 2) {
+                // Vykresli len body, ak ešte nemáme čiaru
+                points.forEach(p => {
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                });
+                return;
+            }
+
+            // Vykreslenie cesty (asfalt)
+            ctx.beginPath();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = parseInt(widthInput.value);
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            // Uzatvorenie trate (späť na začiatok)
+            ctx.closePath();
+            ctx.stroke();
+
+            // Vykreslenie stredovej čiary (pomôcka pre editor)
+            ctx.beginPath();
+            ctx.strokeStyle = 'cyan';
+            ctx.lineWidth = 1;
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        document.getElementById('undoBtn').onclick = () => { points.pop(); render(); };
+        document.getElementById('clearBtn').onclick = () => { if(confirm("Naozaj?")) { points = []; render(); } };
+
+        document.getElementById('saveBtn').onclick = () => {
+            const mapData = {
+                name: "Moja Mapa",
+                trackWidth: parseInt(widthInput.value),
+                points: points
+            };
+            // Stiahnutie súboru JSON
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mapData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "map.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        };
+
+        // Klávesové skratky
+        window.onkeydown = (e) => {
+            if (e.ctrlKey && e.key === 'z') { points.pop(); render(); }
+        };
+    </script>
+</body>
+</html>
