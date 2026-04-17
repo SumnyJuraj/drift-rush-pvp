@@ -10,7 +10,7 @@ canvas.height = 600;
 
 const myCustomMap= {"name":"Moja Mapa","trackWidth":81,"points":[{"x":130,"y":96},{"x":107,"y":495},{"x":252,"y":403},{"x":415,"y":532},{"x":741,"y":543},{"x":413,"y":414},{"x":451,"y":311},{"x":727,"y":244},{"x":693,"y":58},{"x":558,"y":171},{"x":388,"y":150}]}
 
-
+let lastTime = performance.now();
 
 MapManager.loadMap(myCustomMap);
 Inputs.init();
@@ -27,45 +27,31 @@ let lastDistToFinishLine = 0;
 // Tieto premenné musia byť definované pred funkciou update (v globálnom rozsahu game.js)
 
 // Pomocné funkcie na rozdelenie update
-function handleMovement() {
-    const oldWheels = getWheelPositions(player.x, player.y, player.angle);
-    
-    if (Inputs.left) player.angle -= PHYSICS.TURN_SPEED;
-    if (Inputs.right) player.angle += PHYSICS.TURN_SPEED;
+function handleMovement(dt) {
+    // Ak by dt bolo príliš veľké (seklo by hru), obmedzíme ho
+    const dtLimit = Math.min(dt, 2); 
+
+    if (Inputs.left) player.angle -= PHYSICS.TURN_SPEED * dtLimit;
+    if (Inputs.right) player.angle += PHYSICS.TURN_SPEED * dtLimit;
 
     const isTurning = Inputs.left || Inputs.right;
-    const speed = Math.hypot(player.vx, player.vy);
+    
+    // Akceleráciu násobíme dt
+    player.vx += Math.cos(player.angle) * PHYSICS.ACCEL * dtLimit;
+    player.vy += Math.sin(player.angle) * PHYSICS.ACCEL * dtLimit;
 
-    player.vx += Math.cos(player.angle) * PHYSICS.ACCEL;
-    player.vy += Math.sin(player.angle) * PHYSICS.ACCEL;
-
+    // Trenie (Friction) je zložitejšie, použijeme mocninu pre plynulosť
     const drag = isTurning ? PHYSICS.DRIFT_DRAG : PHYSICS.FRICTION;
-    player.vx *= drag;
-    player.vy *= drag;
+    player.vx *= Math.pow(drag, dtLimit);
+    player.vy *= Math.pow(drag, dtLimit);
 
     if (isTurning) {
-        player.vx += Math.cos(player.angle) * PHYSICS.DRIFT_TRACTION;
-        player.vy += Math.sin(player.angle) * PHYSICS.DRIFT_TRACTION;
+        player.vx += Math.cos(player.angle) * PHYSICS.DRIFT_TRACTION * dtLimit;
+        player.vy += Math.sin(player.angle) * PHYSICS.DRIFT_TRACTION * dtLimit;
     }
 
-    if (speed > PHYSICS.MAX_SPEED) {
-        const ratio = PHYSICS.MAX_SPEED / speed;
-        player.vx *= ratio;
-        player.vy *= ratio;
-    }
-
-    player.x += player.vx;
-    player.y += player.vy;
-
-    // Šmúhy
-    if (isTurning && speed > 1) {
-        const newWheels = getWheelPositions(player.x, player.y, player.angle);
-        skidMarks.push({ 
-            l1: oldWheels.left, l2: newWheels.left, 
-            r1: oldWheels.right, r2: newWheels.right, 
-            spawnTime: Date.now() 
-        });
-    }
+    player.x += player.vx * dtLimit;
+    player.y += player.vy * dtLimit;
 }
 
 function checkRaceLogic() {
@@ -100,15 +86,18 @@ function checkRaceLogic() {
     lastDistToFinishLine = currentProgress;
 }
 
-function update() {
-    // Fyzika a logika beží len ak sme nažive a v hre
+function update(currentTime) {
+    // Výpočet delta času v sekundách (ideálne 0.016s pre 60fps)
+    const deltaTime = (currentTime - lastTime) / 16.66; // Normalizujeme na 60 FPS
+    lastTime = currentTime;
+
     if (gameState.mode === 'PLAYING' && gameState.isAlive) {
-        handleMovement();
+        // DeltaTime posielame do fyziky
+        handleMovement(deltaTime);
         
         if (MapManager.isOutOfBounds(player.x, player.y)) {
             die();
         }
-
         checkRaceLogic();
 
         if (socket.connected) {
@@ -119,7 +108,6 @@ function update() {
         }
     }
 
-    // Tieto bežia vždy kvôli vizuálu
     skidMarks = skidMarks.filter(m => Date.now() - m.spawnTime < SKID_LIFE);
     draw();
     requestAnimationFrame(update);
@@ -230,4 +218,7 @@ function draw() {
 socket.on('stateUpdate', (data) => { otherPlayers = data; });
 
 resetPlayerToStart(); // Toto nastaví MapManager.finishLinePoint
-update();
+requestAnimationFrame((timestamp) => {
+    lastTime = timestamp; // Inicializujeme čas prvého snímku
+    update(timestamp);    // Spustíme prvú slučku
+});
