@@ -28,19 +28,20 @@ let lastDistToFinishLine = 0;
 
 // Pomocné funkcie na rozdelenie update
 function handleMovement(dt) {
-    // Ak by dt bolo príliš veľké (seklo by hru), obmedzíme ho
     const dtLimit = Math.min(dt, 2); 
+
+    // Uložíme pozíciu kolies PRED pohybom
+    const oldWheels = getWheelPositions(player.x, player.y, player.angle);
 
     if (Inputs.left) player.angle -= PHYSICS.TURN_SPEED * dtLimit;
     if (Inputs.right) player.angle += PHYSICS.TURN_SPEED * dtLimit;
 
     const isTurning = Inputs.left || Inputs.right;
-    
-    // Akceleráciu násobíme dt
+    const speed = Math.hypot(player.vx, player.vy);
+
     player.vx += Math.cos(player.angle) * PHYSICS.ACCEL * dtLimit;
     player.vy += Math.sin(player.angle) * PHYSICS.ACCEL * dtLimit;
 
-    // Trenie (Friction) je zložitejšie, použijeme mocninu pre plynulosť
     const drag = isTurning ? PHYSICS.DRIFT_DRAG : PHYSICS.FRICTION;
     player.vx *= Math.pow(drag, dtLimit);
     player.vy *= Math.pow(drag, dtLimit);
@@ -50,8 +51,20 @@ function handleMovement(dt) {
         player.vy += Math.sin(player.angle) * PHYSICS.DRIFT_TRACTION * dtLimit;
     }
 
+    // Aplikujeme pohyb
     player.x += player.vx * dtLimit;
     player.y += player.vy * dtLimit;
+
+    // LOGIKA ŠMÚH (SKIDMARKS)
+    // Ak hráč zatáča a ide dostatočne rýchlo, pridáme čiaru
+    if (isTurning && speed > 1) {
+        const newWheels = getWheelPositions(player.x, player.y, player.angle);
+        skidMarks.push({ 
+            l1: oldWheels.left, l2: newWheels.left, 
+            r1: oldWheels.right, r2: newWheels.right, 
+            spawnTime: Date.now() 
+        });
+    }
 }
 
 function checkRaceLogic() {
@@ -183,13 +196,16 @@ function draw() {
 
     const now = Date.now();
     skidMarks.forEach(m => {
+        // Výpočet opacity zabezpečí, že šmúhy postupne miznú (fade out)
         const opacity = Math.max(0, 1 - (now - m.spawnTime) / SKID_LIFE);
         ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.2})`;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(m.l1.x, m.l1.y); ctx.lineTo(m.l2.x, m.l2.y);
         ctx.moveTo(m.r1.x, m.r1.y); ctx.lineTo(m.r2.x, m.r2.y);
         ctx.stroke();
     });
+    
 
     for (let id in otherPlayers) {
         if (id !== socket.id && otherPlayers[id].isAlive) {
@@ -222,3 +238,11 @@ requestAnimationFrame((timestamp) => {
     lastTime = timestamp; // Inicializujeme čas prvého snímku
     update(timestamp);    // Spustíme prvú slučku
 });
+
+
+
+
+
+//pridať animaciu driftu ktora zmizla a opitmalizovať FPS všade
+
+
